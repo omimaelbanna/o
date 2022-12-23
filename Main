@@ -1,0 +1,93 @@
+import speech_recognition as sr
+import webbrowser
+import time
+import playsound
+import os
+import random
+from time import ctime
+from gtts import gTTS
+
+r = sr.Recognizer()
+
+
+def record_audio(ask=False):
+    with sr.Microphone() as source:
+        if ask:
+            speaker(ask)
+        audio = r.listen(source)
+        Voice_data = ''
+        try:
+            Voice_data = r.recognize_google(audio, language="en-uk")
+        except sr.UnknownValueError:
+            speaker('Sorry, I did not get that')
+        except sr.RequestError:
+            speaker('sorry, my speach service is down')
+        return Voice_data
+
+
+def speaker(audio_string):
+    tts = gTTS(text=audio_string, lang='en')
+    R = random.randint(1, 1000000)
+    audio_file = 'audio' + str(R) + '.mp3'
+    tts.save(audio_file)
+    playsound.playsound(audio_file)
+    print(audio_string)
+    os.remove(audio_file)
+
+def respond(Voice_data):
+    if "what's your name" in Voice_data:
+        speaker('My name is Karma')
+    if 'what time is it' in Voice_data:
+        speaker(ctime())
+    if 'search' in Voice_data:
+        search = record_audio('what do you want to search for?')
+        url = 'https://google.com/search?q=' + search
+        webbrowser.get().open(url)
+        speaker('Here is what I found for ' + search)
+    if 'find location' in Voice_data:
+        location = record_audio('what is the location?')
+        url = 'https://google.nl/maps/place/' + location + '/&amp;'
+        webbrowser.get().open(url)
+        speaker('Here is the location of ' + location)
+    if 'I have to go' in Voice_data:
+        speaker('bye')
+        exit()
+
+
+def change_voice():
+    global recognizer
+    speaker.say("Would you like to change to Male or Female Voice?")
+    speaker.runAndWait()
+    done = False
+
+    while not done:
+        try:
+            with speech_recognition.Microphone() as MIC:
+                recognizer.adjust_for_ambient_noise(MIC, duration=0.2)
+                audio = recognizer.listen(MIC)
+
+                gender = recognizer.recognize_google(audio)
+                gender = gender.lower()
+
+                if gender == 'male':
+                    index = 0
+                else:
+                    index = 1
+
+                voices = speaker.getProperty('voice')
+                speaker.setProperty('voice', voices[index].id)
+                done = True
+
+                speaker.say(f"I changed the voice to {gender}!")
+                speaker.runAndWait()
+        except speech_recognition.UnknownValueError:
+            recognizer = speech_recognition.Recognizer()
+            speaker.say("I did not understand. Please try again!")
+            speaker.runAndWait()
+
+
+time.sleep(1)
+speaker('How can I help you?')
+while 1:
+    Voice_data = record_audio()
+    respond(Voice_data)
